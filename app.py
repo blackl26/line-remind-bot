@@ -3,39 +3,47 @@ import os, json, requests, hmac, hashlib, base64
 
 app = Flask(__name__)
 
-CHANNEL_SECRET = os.environ["LINE_CHANNEL_SECRET"]
-GITHUB_TOKEN   = os.environ["GITHUB_TOKEN"]
-GIST_ID        = os.environ["GIST_ID"]
+CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET", "")
+GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN", "")
+GIST_ID        = os.environ.get("GIST_ID", "")
 GIST_FILE      = "groups.json"
 
-# ── 驗證 LINE 簽章 ──────────────────────────────────────
 def verify(body, sig):
-    h = hmac.new(CHANNEL_SECRET.encode(), body, hashlib.sha256).digest()
-    return hmac.compare_digest(base64.b64encode(h).decode(), sig)
+    try:
+        h = hmac.new(CHANNEL_SECRET.encode("utf-8"), body, hashlib.sha256).digest()
+        expected = base64.b64encode(h).decode("utf-8")
+        return hmac.compare_digest(expected, sig)
+    except Exception as e:
+        print(f"[驗證錯誤] {e}")
+        return False
 
-# ── 讀取群組清單 ────────────────────────────────────────
 def get_groups():
-    r = requests.get(
-        f"https://api.github.com/gists/{GIST_ID}",
-        headers={"Authorization": f"token {GITHUB_TOKEN}"}
-    )
-    return json.loads(r.json()["files"][GIST_FILE]["content"])
+    try:
+        r = requests.get(
+            f"https://api.github.com/gists/{GIST_ID}",
+            headers={"Authorization": f"token {GITHUB_TOKEN}"}
+        )
+        return json.loads(r.json()["files"][GIST_FILE]["content"])
+    except:
+        return []
 
-# ── 儲存群組清單 ────────────────────────────────────────
 def save_groups(groups):
-    requests.patch(
-        f"https://api.github.com/gists/{GIST_ID}",
-        headers={"Authorization": f"token {GITHUB_TOKEN}"},
-        json={"files": {GIST_FILE: {"content": json.dumps(groups, indent=2)}}}
-    )
+    try:
+        requests.patch(
+            f"https://api.github.com/gists/{GIST_ID}",
+            headers={"Authorization": f"token {GITHUB_TOKEN}"},
+            json={"files": {GIST_FILE: {"content": json.dumps(groups, indent=2)}}}
+        )
+    except Exception as e:
+        print(f"[儲存錯誤] {e}")
 
-# ── Webhook 端點 ────────────────────────────────────────
 @app.route("/webhook", methods=["POST"])
 def webhook():
     sig  = request.headers.get("X-Line-Signature", "")
     body = request.get_data()
 
     if not verify(body, sig):
+        print(f"[簽章失敗] sig={sig}")
         return jsonify({"error": "Invalid signature"}), 403
 
     for event in request.json.get("events", []):
@@ -60,10 +68,9 @@ def webhook():
 
     return jsonify({"status": "ok"})
 
-# ── 健康檢查 ────────────────────────────────────────────
 @app.route("/", methods=["GET"])
 def health():
-    return jsonify({"status": "running"})
+    return jsonify({"status": "running", "gist_id": GIST_ID[:8] + "..."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
