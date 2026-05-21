@@ -2,7 +2,7 @@ import os, json, requests, holidays
 from datetime import date
 
 LINE_TOKEN    = os.environ["LINE_TOKEN"]
-GITHUB_TOKEN  = os.environ["GITHUB_TOKEN"]
+GITHUB_TOKEN  = os.environ["GH_TOKEN"]
 GIST_ID       = os.environ["GIST_ID"]
 GIST_FILE     = "groups.json"
 
