@@ -40,7 +40,7 @@ for gid in groups:
     res = requests.post(
         "https://api.line.me/v2/bot/message/push",
         headers=headers,
-        json={"to": gid, "messages": [{"type": "text", "text": "📋 請記得處理收發文！"}]}
+        json={"to": gid, "messages": [{"type": "text", "text": "📢📢📢請記得處理收發文📢📢📢"}]}
     )
     status = "✅ 成功" if res.status_code == 200 else f"❌ 失敗（{res.status_code}）"
     print(f"群組 {gid}：{status}")
