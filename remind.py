@@ -9,15 +9,15 @@ GIST_FILE     = "groups.json"
 today = date.today()
 
 # ── 1. 週末跳過 ─────────────────────────────────────────
-# if today.weekday() >= 5:
-#     print(f"[跳過] {today} 是週末")
-#     exit(0)
+if today.weekday() >= 5:
+     print(f"[跳過] {today} 是週末")
+     exit(0)
 
 # ── 2. 國定假日跳過 ─────────────────────────────────────
-# tw = holidays.Taiwan(years=today.year)
-# if today in tw:
-#     print(f"[跳過] {today} 是國定假日（{tw[today]}）")
-#     exit(0)
+tw = holidays.Taiwan(years=today.year)
+ if today in tw:
+     print(f"[跳過] {today} 是國定假日（{tw[today]}）")
+     exit(0)
 
 # ── 3. 從 Gist 讀取所有群組 ─────────────────────────────
 r = requests.get(
