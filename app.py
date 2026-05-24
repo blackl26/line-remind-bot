@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
-import os, json, requests, hmac, hashlib, base64
+import os, json, requests, hmac, hashlib, base64, subprocess
 
 app = Flask(__name__)
-
 CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET", "")
 GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN", "")
 GIST_ID        = os.environ.get("GIST_ID", "")
 GIST_FILE      = "groups.json"
+TRIGGER_SECRET = "ed2026remind"
 
 def verify(body, sig):
     try:
@@ -37,35 +37,36 @@ def save_groups(groups):
     except Exception as e:
         print(f"[儲存錯誤] {e}")
 
+@app.route("/trigger", methods=["POST"])
+def trigger():
+    token = request.headers.get("X-Token")
+    if token != TRIGGER_SECRET:
+        return "Unauthorized", 401
+    subprocess.Popen(["python", "remind.py"])
+    return "OK", 200
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     sig  = request.headers.get("X-Line-Signature", "")
     body = request.get_data()
-
     if not verify(body, sig):
         print(f"[簽章失敗] sig={sig}")
         return jsonify({"error": "Invalid signature"}), 403
-
     for event in request.json.get("events", []):
         source   = event.get("source", {})
         etype    = event.get("type")
         group_id = source.get("groupId")
-
         if source.get("type") != "group" or not group_id:
             continue
-
         groups = get_groups()
-
         if etype == "join" and group_id not in groups:
             groups.append(group_id)
             save_groups(groups)
             print(f"[加入] {group_id}")
-
         elif etype == "leave" and group_id in groups:
             groups.remove(group_id)
             save_groups(groups)
             print(f"[離開] {group_id}")
-
     return jsonify({"status": "ok"})
 
 @app.route("/", methods=["GET"])
