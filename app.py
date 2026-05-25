@@ -3,7 +3,7 @@ import os, json, requests, hmac, hashlib, base64, subprocess
 
 app = Flask(__name__)
 CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET", "")
-GITHUB_TOKEN   = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_TOKEN = os.environ.get("GH_TOKEN", "")
 GIST_ID        = os.environ.get("GIST_ID", "")
 GIST_FILE      = "groups.json"
 TRIGGER_SECRET = "ed2026remind"
